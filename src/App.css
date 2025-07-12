@@ -629,6 +629,9 @@ body {
   margin: 0 auto;
   width: 100%;
   padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .typing-dots {
@@ -657,6 +660,13 @@ body {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+.streaming-text {
+  color: #8b5a3c;
+  font-size: 14px;
+  font-style: italic;
+  opacity: 0.8;
 }
 
 /* Error banner */

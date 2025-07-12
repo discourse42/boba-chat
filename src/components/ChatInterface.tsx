@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { useChat } from '../contexts/ChatContext';
@@ -14,11 +14,32 @@ export const ChatInterface: React.FC = () => {
   } = useChat();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [streamingSeconds, setStreamingSeconds] = useState(0);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Timer for streaming indicator
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isStreaming) {
+      setStreamingSeconds(0);
+      interval = setInterval(() => {
+        setStreamingSeconds(prev => prev + 1);
+      }, 1000);
+    } else {
+      setStreamingSeconds(0);
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isStreaming]);
 
   const getPlaceholder = () => {
     if (isStreaming) return 'Claude is responding...';
@@ -43,7 +64,7 @@ export const ChatInterface: React.FC = () => {
               <h2>Welcome to Boba Chat</h2>
               <p>A basic Claude Sonnet 4 chat wrapper</p>
               <p style={{ fontSize: '14px', color: '#666', margin: '10px 0', textAlign: 'center' }}>
-                I built this while half-watching that Boba Fett show on Disney. <br/>I thought it might be good like Andor, but it was just passable. <br/>Kind of like this app.
+                <br/>Boba Chat is a chatbot implementation that likes to provide links and <br/>has a tendency to search before speaking.<br/><br/>Why the name? <br/><br/>I built this while half-watching that Boba Fett show on Disney. <br/>I thought it might be good like Andor, but it was just passable. <br/><br/>Kind of like this app, which was a way to teach<br/>myself the Claude API, not to provide a product, <br/> so there you go.
               </p>
               <div style={{ 
                 fontSize: '14px', 
@@ -72,6 +93,9 @@ export const ChatInterface: React.FC = () => {
               <span>.</span>
               <span>.</span>
               <span>.</span>
+            </span>
+            <span className="streaming-text">
+              Generating...may be some time ({streamingSeconds}s)
             </span>
           </div>
         )}
