@@ -29,7 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleDeleteSession = (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this session?')) {
+    if (confirm('⚠️ WARNING: This session and all its messages will be permanently deleted from the database and cannot be recovered. Are you absolutely sure you want to delete this session forever?')) {
       onDeleteSession(sessionId);
     }
   };
@@ -42,11 +42,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' });
+      // Today: show date and time
+      return date.toLocaleString([], { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        timeZone: 'America/Los_Angeles' 
+      });
     } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString([], { weekday: 'short', timeZone: 'America/Los_Angeles' });
+      // This week: show weekday and date
+      return date.toLocaleDateString([], { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric', 
+        timeZone: 'America/Los_Angeles' 
+      });
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
+      // Older: show full date
+      return date.toLocaleDateString([], { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric', 
+        timeZone: 'America/Los_Angeles' 
+      });
     }
   };
 

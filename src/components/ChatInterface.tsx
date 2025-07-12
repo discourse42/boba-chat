@@ -45,9 +45,19 @@ export const ChatInterface: React.FC = () => {
               <p style={{ fontSize: '14px', color: '#666', margin: '10px 0', textAlign: 'center' }}>
                 I built this while half-watching that Boba Fett show on Disney. <br/>I thought it might be good like Andor, but it was just passable. <br/>Kind of like this app.
               </p>
-              <p style={{ fontSize: '14px', color: '#999', marginTop: '20px' }}>
-                Note: This interface is not yet designed for mobile devices
-              </p>
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#b8860b', 
+                marginTop: '20px',
+                backgroundColor: '#fffacd',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                textAlign: 'center',
+                fontWeight: '500'
+              }}>
+                ⚠️ Note: This interface is not yet designed for mobile devices
+              </div>
             </div>
           </div>
         )}
