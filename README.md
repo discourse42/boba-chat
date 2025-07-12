@@ -99,7 +99,7 @@ npm install
 cp .env.example .env
 
 # Edit .env with your configuration
-VITE_ANTHROPIC_API_KEY=your-anthropic-api-key-here
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
 JWT_SECRET=your-secure-jwt-secret-here
 PORT=3002
 DEFAULT_PASSWORD=your-secure-password

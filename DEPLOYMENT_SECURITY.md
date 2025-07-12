@@ -81,7 +81,7 @@ echo "Will auto-remove in 30 minutes"
 - [ ] Set `NODE_ENV=production`
 - [ ] Generate strong `JWT_SECRET` (minimum 32 characters)
 - [ ] Remove or change `DEFAULT_PASSWORD`
-- [ ] Ensure `VITE_ANTHROPIC_API_KEY` is properly secured
+- [ ] Ensure `ANTHROPIC_API_KEY` is properly secured
 - [ ] Disable debug logging
 
 ### Database Security
