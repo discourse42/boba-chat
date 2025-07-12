@@ -26,6 +26,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         let html = marked(message.content);
         // Post-process to add target="_blank" to all links
         html = html.replace(/<a href="([^"]*)"([^>]*)>/g, '<a href="$1" target="_blank" rel="noopener noreferrer"$2>');
+        
+        // Add table expand/collapse functionality
+        html = html.replace(/<table([^>]*)>/g, (match, attrs) => {
+          const tableId = `table-${Math.random().toString(36).substr(2, 9)}`;
+          return `<div class="table-container" id="container-${tableId}">
+                    <button class="table-expand-btn" onclick="toggleTable('${tableId}')" title="Expand table">⤢</button>
+                    <table${attrs} id="${tableId}">`;
+        });
+        html = html.replace(/<\/table>/g, '</table></div>');
+        
         return { __html: html };
       } catch (error) {
         console.error('Error parsing markdown:', error);

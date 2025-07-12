@@ -8,6 +8,25 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Global function for table expand/collapse functionality
+      window.toggleTable = function(tableId) {
+        const container = document.getElementById(`container-${tableId}`);
+        const button = container.querySelector('.table-expand-btn');
+        
+        if (container.classList.contains('expanded')) {
+          // Collapse table
+          container.classList.remove('expanded');
+          button.innerHTML = '⤢';
+          button.title = 'Expand table';
+        } else {
+          // Expand table
+          container.classList.add('expanded');
+          button.innerHTML = '⤡';
+          button.title = 'Collapse table';
+        }
+      };
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

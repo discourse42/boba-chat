@@ -113,14 +113,28 @@
         }
         .message-content table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             margin: 12px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
         }
         .message-content th,
         .message-content td {
-            border: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
             padding: 8px 12px;
             text-align: left;
+            font-size: calc(1em - 1.5pt);
+        }
+        .message-content th:last-child,
+        .message-content td:last-child {
+            border-right: none;
+        }
+        .message-content tr:last-child th,
+        .message-content tr:last-child td {
+            border-bottom: none;
         }
         .message-content th {
             background-color: #f8f8f8;
@@ -181,6 +195,64 @@
         }
         .message.collapsed .collapse-button {
             display: none;
+        }
+        .table-container table {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        /* Table container for expand/collapse functionality */
+        .table-container {
+            position: relative;
+            margin: 12px 0;
+        }
+        
+        .table-container.expanded table {
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        /* Allow tables to overhang when expanded and there's sufficient space */
+        @media (min-width: 1200px) {
+            .table-container.expanded table {
+                width: 150%; /* 50% wider than the message content */
+                max-width: min(150%, calc(100vw - 100px)); /* Don't exceed viewport minus padding */
+                margin-left: -25%; /* Center the wider table */
+                margin-right: -25%;
+            }
+        }
+        
+        /* Table expand/collapse button */
+        .table-expand-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #8b5a3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .table-expand-btn:hover {
+            background: #6d4530;
+            transform: scale(1.1);
+        }
+        
+        .table-expand-btn:focus {
+            outline: 2px solid #8b5a3c;
+            outline-offset: 2px;
         }
         .loading {
             text-align: center;
@@ -343,6 +415,16 @@
                         let html = marked.parse(msg.content);
                         // Post-process to add target="_blank" to all links
                         html = html.replace(/<a href="([^"]*)"([^>]*)>/g, '<a href="$1" target="_blank" rel="noopener noreferrer"$2>');
+                        
+                        // Add table expand/collapse functionality
+                        html = html.replace(/<table([^>]*)>/g, (match, attrs) => {
+                            const tableId = `table-${Math.random().toString(36).substr(2, 9)}`;
+                            return `<div class="table-container" id="container-${tableId}">
+                                      <button class="table-expand-btn" onclick="toggleTable('${tableId}')" title="Expand table">⤢</button>
+                                      <table${attrs} id="${tableId}">`;
+                        });
+                        html = html.replace(/<\/table>/g, '</table></div>');
+                        
                         contentDiv.innerHTML = html;
                     } catch (error) {
                         console.error('Error parsing markdown:', error);
@@ -378,6 +460,24 @@
                 messageDiv.appendChild(contentDiv);
                 container.appendChild(messageDiv);
             });
+        }
+        
+        // Global function for table expand/collapse functionality
+        function toggleTable(tableId) {
+            const container = document.getElementById(`container-${tableId}`);
+            const button = container.querySelector('.table-expand-btn');
+            
+            if (container.classList.contains('expanded')) {
+                // Collapse table
+                container.classList.remove('expanded');
+                button.innerHTML = '⤢';
+                button.title = 'Expand table';
+            } else {
+                // Expand table
+                container.classList.add('expanded');
+                button.innerHTML = '⤡';
+                button.title = 'Collapse table';
+            }
         }
     </script>
 </body>
