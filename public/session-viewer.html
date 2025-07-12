@@ -262,13 +262,13 @@
                 // Update session title and info
                 document.getElementById('session-title').textContent = session.title;
                 
-                // Parse UTC timestamps and convert to Pacific time
+                // Parse UTC timestamps and convert to user's local time
                 const createdDate = new Date(session.created_at + (session.created_at.includes('Z') ? '' : 'Z'));
                 const updatedDate = new Date(session.updated_at + (session.updated_at.includes('Z') ? '' : 'Z'));
                 
                 document.getElementById('session-info').innerHTML = `
-                    Created: ${createdDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}<br>
-                    Last updated: ${updatedDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}
+                    Created: ${createdDate.toLocaleString()}<br>
+                    Last updated: ${updatedDate.toLocaleString()}
                 `;
                 
                 displayMessages(messages);
@@ -282,7 +282,7 @@
             // Ensure UTC timestamp is properly parsed by adding 'Z' if not present
             const utcTimestamp = timestamp + (timestamp.includes('Z') ? '' : 'Z');
             const date = new Date(utcTimestamp);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' });
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
         
         function displayMessages(messages) {

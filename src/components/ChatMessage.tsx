@@ -17,7 +17,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     // Ensure UTC timestamp is properly parsed by adding 'Z' if not present
     const utcTimestamp = timestamp + (timestamp.includes('Z') ? '' : 'Z');
     const date = new Date(utcTimestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' });
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const renderContent = () => {

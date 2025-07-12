@@ -47,24 +47,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         month: 'short', 
         day: 'numeric', 
         hour: '2-digit', 
-        minute: '2-digit', 
-        timeZone: 'America/Los_Angeles' 
+        minute: '2-digit'
       });
     } else if (diffInHours < 24 * 7) {
       // This week: show weekday and date
       return date.toLocaleDateString([], { 
         weekday: 'short', 
         month: 'short', 
-        day: 'numeric', 
-        timeZone: 'America/Los_Angeles' 
+        day: 'numeric'
       });
     } else {
       // Older: show full date
       return date.toLocaleDateString([], { 
         month: 'short', 
         day: 'numeric', 
-        year: 'numeric', 
-        timeZone: 'America/Los_Angeles' 
+        year: 'numeric'
       });
     }
   };
