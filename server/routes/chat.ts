@@ -3,6 +3,8 @@ import { authenticateToken, type AuthenticatedRequest } from '../middleware/auth
 import { DatabaseService } from '../services/database';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { calculateContextUsage, formatTokenUsage } from '../utils/tokenCounter';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import type { Response } from 'express';
 
 const router = express.Router();
@@ -38,6 +40,15 @@ router.post('/stream', authenticateToken, asyncHandler(async (req: Authenticated
   // Save user message
   await DatabaseService.saveMessage(currentSessionId, 'user', message);
 
+  // Load system prompt
+  let systemPrompt = '';
+  try {
+    const promptPath = join(process.cwd(), 'prompts', 'default.md');
+    systemPrompt = await readFile(promptPath, 'utf-8');
+  } catch (error) {
+    console.warn('Could not load default system prompt:', error);
+  }
+
   // Get conversation history
   const messages = await DatabaseService.getMessagesBySessionId(currentSessionId);
   const conversationHistory = messages.map(msg => ({
@@ -71,6 +82,7 @@ router.post('/stream', authenticateToken, asyncHandler(async (req: Authenticated
         model,
         max_tokens: 4096,
         messages: conversationHistory,
+        ...(systemPrompt.trim() && { system: systemPrompt.trim() }),
         tools: [{ type: "web_search_20250305", name: "web_search" }],
         stream: true
       })
