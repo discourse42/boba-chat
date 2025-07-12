@@ -37,7 +37,7 @@ app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
   console.log('Login attempt:', { username, password });
   
-  if (username === 'admin' && password === 'claudechat2025') {
+  if (username === 'admin' && password === 'bobachat2025') {
     res.json({ 
       token: 'test-token',
       user: { id: 1, username: 'admin' }

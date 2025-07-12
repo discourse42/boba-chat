@@ -21,7 +21,7 @@ export const LoginForm: React.FC = () => {
   return (
     <div className="login-container">
       <div className="login-form">
-        <h1>Claude Chat</h1>
+        <h1>Boba Chat</h1>
         <p>Enhanced version with modern architecture</p>
         
         <form onSubmit={handleSubmit}>
@@ -46,7 +46,7 @@ export const LoginForm: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
-              placeholder="Enter password (default: claudechat2025)"
+              placeholder="Enter password (default: bobachat2025)"
             />
           </div>
           
@@ -60,7 +60,7 @@ export const LoginForm: React.FC = () => {
         <div className="login-info">
           <p><strong>Default credentials:</strong></p>
           <p>Username: admin</p>
-          <p>Password: claudechat2025</p>
+          <p>Password: bobachat2025</p>
         </div>
       </div>
     </div>

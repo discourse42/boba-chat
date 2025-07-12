@@ -23,8 +23,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Validate required environment variables
-if (!process.env.VITE_ANTHROPIC_API_KEY) {
-  console.error('ERROR: Missing required VITE_ANTHROPIC_API_KEY environment variable');
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('ERROR: Missing required ANTHROPIC_API_KEY environment variable');
   process.exit(1);
 }
 

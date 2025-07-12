@@ -27,6 +27,13 @@ export interface AuthState {
   isLoading: boolean;
 }
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens?: number;
+  totalTokens: number;
+  messageCount: number;
+}
+
 export interface ChatState {
   currentSession: Session | null;
   sessions: Session[];
@@ -34,11 +41,13 @@ export interface ChatState {
   isLoading: boolean;
   isStreaming: boolean;
   error: string | null;
+  tokenUsage: TokenUsage | null;
 }
 
 export interface StreamEvent {
-  type: 'sessionId' | 'start' | 'content' | 'stop' | 'error';
+  type: 'sessionId' | 'start' | 'content' | 'stop' | 'error' | 'tokenUsage' | 'finalTokenUsage';
   sessionId?: string;
   content?: string;
   error?: string;
+  usage?: TokenUsage;
 }

@@ -13,7 +13,7 @@ export class ApiError extends Error {
 }
 
 const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('claude-chat-token');
+  const token = localStorage.getItem('boba-chat-token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 

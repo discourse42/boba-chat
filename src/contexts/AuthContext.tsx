@@ -61,14 +61,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
-    const token = localStorage.getItem('claude-chat-token');
+    // Migration: Check for old token key and migrate to new key
+    let token = localStorage.getItem('boba-chat-token');
+    
+    if (!token) {
+      const oldToken = localStorage.getItem('claude-chat-token');
+      if (oldToken) {
+        localStorage.setItem('boba-chat-token', oldToken);
+        localStorage.removeItem('claude-chat-token');
+        token = oldToken;
+      }
+    }
+    
     if (token) {
       authService.verifyToken(token)
         .then(({ user }) => {
           dispatch({ type: 'RESTORE_SESSION', payload: { user, token } });
         })
         .catch(() => {
-          localStorage.removeItem('claude-chat-token');
+          localStorage.removeItem('boba-chat-token');
         });
     }
   }, []);
@@ -77,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'LOGIN_START' });
     try {
       const { user, token } = await authService.login(username, password);
-      localStorage.setItem('claude-chat-token', token);
+      localStorage.setItem('boba-chat-token', token);
       dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
     } catch (error) {
       dispatch({ type: 'LOGIN_FAILURE', payload: error as string });
@@ -86,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('claude-chat-token');
+    localStorage.removeItem('boba-chat-token');
     dispatch({ type: 'LOGOUT' });
   };
 

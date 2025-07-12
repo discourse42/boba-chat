@@ -34,7 +34,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     <div className={`message ${message.role}`}>
       <div className="message-header">
         <span className="message-role">
-          {message.role === 'user' ? 'You' : 'Claude'}
+          {message.role === 'user' ? 'You' : 'Boba'}
         </span>
         <span className="message-timestamp">
           {formatTimestamp(message.timestamp)}

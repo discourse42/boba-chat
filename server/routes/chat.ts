@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticateToken, type AuthenticatedRequest } from '../middleware/auth';
 import { DatabaseService } from '../services/database';
 import { asyncHandler, createError } from '../middleware/errorHandler';
+import { calculateContextUsage, formatTokenUsage } from '../utils/tokenCounter';
 import type { Response } from 'express';
 
 const router = express.Router();
@@ -45,6 +46,10 @@ router.post('/stream', authenticateToken, asyncHandler(async (req: Authenticated
     content: msg.content
   }));
 
+  // Calculate token usage
+  const tokenUsage = await calculateContextUsage(conversationHistory, model);
+  console.log(`Token usage: ${formatTokenUsage(tokenUsage)}`);
+
   // Set up streaming response
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -60,7 +65,7 @@ router.post('/stream', authenticateToken, asyncHandler(async (req: Authenticated
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.VITE_ANTHROPIC_API_KEY!,
+        'x-api-key': process.env.ANTHROPIC_API_KEY!,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -78,32 +83,45 @@ router.post('/stream', authenticateToken, asyncHandler(async (req: Authenticated
     }
 
     let assistantResponse = '';
+    let outputTokens = 0;
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
+    let buffer = '';
 
     if (!reader) {
       throw createError('Failed to get response stream', 500);
     }
 
-    // Send session ID to client
+    // Send session ID and token usage to client
     res.write(`data: ${JSON.stringify({ type: 'sessionId', sessionId: currentSessionId })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'tokenUsage', usage: tokenUsage })}\n\n`);
 
     while (true) {
       const { done, value } = await reader.read();
       
       if (done) break;
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
+      // Decode chunk and add to buffer
+      buffer += decoder.decode(value, { stream: true });
+      
+      // Process complete lines
+      const lines = buffer.split('\n');
+      
+      // Keep the last incomplete line in the buffer
+      buffer = lines.pop() || '';
 
       for (const line of lines) {
+        if (line.trim() === '') continue;
+        
         if (line.startsWith('data: ')) {
-          const data = line.slice(6);
+          const data = line.slice(6).trim();
           
           if (data === '[DONE]') {
             res.write('data: [DONE]\n\n');
             break;
           }
+
+          if (data === '') continue;
 
           try {
             const parsed = JSON.parse(data);
@@ -113,11 +131,22 @@ router.post('/stream', authenticateToken, asyncHandler(async (req: Authenticated
               res.write(`data: ${JSON.stringify({ type: 'content', content: parsed.delta.text })}\n\n`);
             } else if (parsed.type === 'message_start') {
               res.write(`data: ${JSON.stringify({ type: 'start' })}\n\n`);
+            } else if (parsed.type === 'message_delta' && parsed.usage) {
+              // Capture output token usage
+              outputTokens = parsed.usage.output_tokens || 0;
             } else if (parsed.type === 'message_stop') {
+              // Send final token usage with output tokens
+              const finalTokenUsage = {
+                ...tokenUsage,
+                outputTokens,
+                totalTokens: tokenUsage.inputTokens + outputTokens
+              };
+              res.write(`data: ${JSON.stringify({ type: 'finalTokenUsage', usage: finalTokenUsage })}\n\n`);
               res.write(`data: ${JSON.stringify({ type: 'stop' })}\n\n`);
             }
           } catch (parseError) {
             console.error('Failed to parse streaming data:', parseError);
+            console.error('Problematic data:', data);
           }
         }
       }

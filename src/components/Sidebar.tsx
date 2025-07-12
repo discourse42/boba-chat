@@ -62,6 +62,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <div className="sessions-list">
         <h3>Recent Sessions</h3>
+        <div className="sessions-warning">
+          ⚠️ All conversations are visible to anyone using this login
+        </div>
         {sessions.length === 0 ? (
           <div className="no-sessions">No conversations yet</div>
         ) : (

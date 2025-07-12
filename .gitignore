@@ -78,3 +78,8 @@ temp/
 
 # Local files
 *.local
+
+# Debug and test tools (for security)
+.debug-tools/
+debug-*.html
+test-*.html

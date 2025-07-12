@@ -38,7 +38,7 @@ export class DatabaseService {
       await mkdir(dataDir, { recursive: true });
       
       this.db = await open({
-        filename: join(dataDir, 'claude-chat.db'),
+        filename: join(dataDir, 'boba-chat.db'),
         driver: sqlite3.Database
       });
 
@@ -104,7 +104,7 @@ export class DatabaseService {
     const existingUser = await this.db.get('SELECT id FROM users WHERE username = ?', ['admin']);
     
     if (!existingUser) {
-      const defaultPassword = process.env.DEFAULT_PASSWORD || 'claudechat2025';
+      const defaultPassword = process.env.DEFAULT_PASSWORD || 'bobachat2025';
       const passwordHash = await bcrypt.hash(defaultPassword, 12);
       
       await this.db.run(
@@ -114,7 +114,7 @@ export class DatabaseService {
       
       console.log('Default user created with username: admin');
       if (!process.env.DEFAULT_PASSWORD) {
-        console.log('Default password: claudechat2025');
+        console.log('Default password: bobachat2025');
         console.log('Please change this password in production!');
       }
     }

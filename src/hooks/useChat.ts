@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from 'react';
-import type { ChatState, Message, Session } from '../types';
+import type { ChatState, Message, Session, TokenUsage } from '../types';
 import { chatService, sessionService } from '../services/api';
 
 type ChatAction =
@@ -11,7 +11,8 @@ type ChatAction =
   | { type: 'SET_MESSAGES'; payload: Message[] }
   | { type: 'ADD_MESSAGE'; payload: Message }
   | { type: 'UPDATE_LAST_MESSAGE'; payload: string }
-  | { type: 'CLEAR_MESSAGES' };
+  | { type: 'CLEAR_MESSAGES' }
+  | { type: 'SET_TOKEN_USAGE'; payload: TokenUsage | null };
 
 const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
   switch (action.type) {
@@ -39,7 +40,9 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
       return { ...state, messages };
     }
     case 'CLEAR_MESSAGES':
-      return { ...state, messages: [], currentSession: null };
+      return { ...state, messages: [], currentSession: null, tokenUsage: null };
+    case 'SET_TOKEN_USAGE':
+      return { ...state, tokenUsage: action.payload };
     default:
       return state;
   }
@@ -52,6 +55,7 @@ const initialState: ChatState = {
   isLoading: false,
   isStreaming: false,
   error: null,
+  tokenUsage: null,
 };
 
 export const useChat = () => {
@@ -63,7 +67,20 @@ export const useChat = () => {
       const sessions = await sessionService.getSessions();
       dispatch({ type: 'SET_SESSIONS', payload: sessions });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to load sessions' });
+      let errorMessage = 'Failed to load sessions';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Provide helpful guidance for authentication errors
+        if (errorMessage.toLowerCase().includes('access token required') || 
+            errorMessage.toLowerCase().includes('token') ||
+            errorMessage.toLowerCase().includes('unauthorized')) {
+          errorMessage += '. Please refresh the page and log in again.';
+        }
+      }
+      
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -76,7 +93,20 @@ export const useChat = () => {
       dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
       dispatch({ type: 'SET_MESSAGES', payload: messages });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to load session' });
+      let errorMessage = 'Failed to load session';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Provide helpful guidance for authentication errors
+        if (errorMessage.toLowerCase().includes('access token required') || 
+            errorMessage.toLowerCase().includes('token') ||
+            errorMessage.toLowerCase().includes('unauthorized')) {
+          errorMessage += '. Please refresh the page and log in again.';
+        }
+      }
+      
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -137,13 +167,36 @@ export const useChat = () => {
               }
             }
             break;
+          case 'tokenUsage':
+            if (event.usage) {
+              dispatch({ type: 'SET_TOKEN_USAGE', payload: event.usage });
+            }
+            break;
+          case 'finalTokenUsage':
+            if (event.usage) {
+              dispatch({ type: 'SET_TOKEN_USAGE', payload: event.usage });
+            }
+            break;
           case 'error':
             dispatch({ type: 'SET_ERROR', payload: event.error || 'Unknown error occurred' });
             break;
         }
       }
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to send message' });
+      let errorMessage = 'Failed to send message';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Provide helpful guidance for authentication errors
+        if (errorMessage.toLowerCase().includes('access token required') || 
+            errorMessage.toLowerCase().includes('token') ||
+            errorMessage.toLowerCase().includes('unauthorized')) {
+          errorMessage += '. Please refresh the page and log in again.';
+        }
+      }
+      
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_STREAMING', payload: false });
     }

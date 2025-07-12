@@ -1,4 +1,5 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import { DatabaseService } from '../services/database';
 import { generateToken } from '../middleware/auth';
 import { asyncHandler, createError } from '../middleware/errorHandler';
@@ -51,8 +52,13 @@ router.post('/verify', asyncHandler(async (req: Request, res: Response) => {
   }
 
   try {
-    const jwt = await import('jsonwebtoken');
     const secret = process.env.JWT_SECRET!;
+    
+    if (!secret) {
+      console.error('JWT_SECRET not found in environment');
+      throw createError('Server configuration error', 500);
+    }
+    
     const decoded = jwt.verify(token, secret) as { id: number; username: string };
     
     // Verify user still exists

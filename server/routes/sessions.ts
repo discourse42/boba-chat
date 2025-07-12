@@ -6,18 +6,20 @@ import type { Response } from 'express';
 
 const router = express.Router();
 
-// Get all sessions for the authenticated user
+// Get all sessions (visible to all authenticated users)
 router.get('/', authenticateToken, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const sessions = await DatabaseService.getSessionsByUserId(userId);
+  // Since all users share the same login, show all sessions
+  const db = await DatabaseService.getDb();
+  const sessions = await db.all(
+    'SELECT * FROM sessions ORDER BY updated_at DESC'
+  );
   
   res.json(sessions);
 }));
 
-// Get a specific session with messages
+// Get a specific session with messages (visible to all authenticated users)
 router.get('/:sessionId', authenticateToken, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { sessionId } = req.params;
-  const userId = req.user!.id;
 
   const session = await DatabaseService.getSession(sessionId);
   
@@ -25,10 +27,7 @@ router.get('/:sessionId', authenticateToken, asyncHandler(async (req: Authentica
     throw createError('Session not found', 404);
   }
 
-  if (session.user_id !== userId) {
-    throw createError('Access denied', 403);
-  }
-
+  // All authenticated users can view any session
   const messages = await DatabaseService.getMessagesBySessionId(sessionId);
 
   res.json({

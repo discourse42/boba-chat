@@ -1,8 +1,10 @@
 # Boba Chat
 
-A basic Claude chat wrapper built with React, TypeScript, and Express.js. 
+A basic Boba chat wrapper built with React, TypeScript, and Express.js. 
 
-I built this while half-watching that Boba Fett show on Disney. I thought it might be good like Andor, but it was just passable. Kind of like this app.
+I built this while half-watching that Boba Fett show on Disney. I thought it might be good like Andor, but it was just passable. Kind of like this app. So I named it Boba Chat.
+
+This is primarily a little project to learn how the Claude API works and what is possible with it.
 
 ## ✨ Features
 
@@ -99,15 +101,28 @@ DEFAULT_PASSWORD=your-secure-password
 ```
 
 3. **Start development server:**
+
+**Option A: Using npm (simple)**
 ```bash
-# Start the test server (recommended)
-node test-server.js
-
-# Then start the frontend
-npm run dev:client
-
-# Or use the full TypeScript setup:
 npm run dev  # Starts both frontend and backend
+```
+
+**Option B: Using PM2 (keeps running after terminal closes)**
+```bash
+# Install PM2 globally if not already installed
+npm install -g pm2
+
+# Start with PM2
+pm2 start ecosystem.config.js
+
+# View logs
+pm2 logs
+
+# Stop all processes
+pm2 stop all
+
+# Restart all processes
+pm2 restart all
 ```
 
 4. **Access the application:**
@@ -122,8 +137,17 @@ npm run build
 ```
 
 2. **Start the production server:**
+
+**Option A: Direct start**
 ```bash
 npm start
+```
+
+**Option B: Using PM2 (recommended)**
+```bash
+pm2 start ecosystem.prod.config.js
+pm2 save  # Save process list
+pm2 startup  # Generate startup script
 ```
 
 ## ✨ **Key Features**
@@ -159,6 +183,23 @@ npm run dev:server   # Start Express server only
 npm run build        # Build frontend for production
 npm run start        # Build and start production server
 npm run lint         # Run ESLint
+```
+
+### PM2 Commands
+```bash
+# Development
+pm2 start ecosystem.config.js       # Start dev servers
+pm2 logs                            # View all logs
+pm2 logs boba-chat-server          # View server logs only
+pm2 logs boba-chat-client          # View client logs only
+pm2 status                         # Check process status
+pm2 monit                          # Interactive monitoring
+
+# Production
+pm2 start ecosystem.prod.config.js  # Start production
+pm2 reload all                     # Zero-downtime reload
+pm2 save                           # Save current process list
+pm2 startup                        # Configure auto-start on boot
 ```
 
 ### Database

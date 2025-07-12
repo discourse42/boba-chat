@@ -9,6 +9,7 @@ export const ChatInterface: React.FC = () => {
     isStreaming,
     isLoading,
     error,
+    tokenUsage,
     sendMessage,
   } = useChat();
   
@@ -40,9 +41,9 @@ export const ChatInterface: React.FC = () => {
           <div className="welcome-message">
             <div className="welcome-content">
               <h2>Welcome to Boba Chat</h2>
-              <p>A basic Claude chat wrapper</p>
-              <p style={{ fontSize: '14px', color: '#666', margin: '10px 0' }}>
-                I built this while half-watching that Boba Fett show on Disney. I thought it might be good like Andor, but it was just passable. Kind of like this app.
+              <p>A basic Boba chat wrapper</p>
+              <p style={{ fontSize: '14px', color: '#666', margin: '10px 0', textAlign: 'center' }}>
+                I built this while half-watching that Boba Fett show on Disney. <br/>I thought it might be good like Andor, but it was just passable. <br/>Kind of like this app.
               </p>
               <p style={{ fontSize: '14px', color: '#999', marginTop: '20px' }}>
                 Note: This interface is not yet designed for mobile devices
@@ -76,6 +77,14 @@ export const ChatInterface: React.FC = () => {
       )}
 
       <div className="chat-input-area">
+        {tokenUsage && (
+          <div className="token-usage">
+            📊 {tokenUsage.outputTokens 
+              ? `${tokenUsage.totalTokens} tokens (${tokenUsage.inputTokens} in + ${tokenUsage.outputTokens} out, ${tokenUsage.messageCount} messages)`
+              : `${tokenUsage.inputTokens} input tokens (${tokenUsage.messageCount} messages)`
+            }
+          </div>
+        )}
         <ChatInput
           onSendMessage={sendMessage}
           disabled={isStreaming || isLoading}

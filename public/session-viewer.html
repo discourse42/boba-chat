@@ -195,8 +195,18 @@
             try {
                 console.log('Loading session:', sessionId);
                 
+                // Get token from localStorage
+                const token = localStorage.getItem('boba-chat-token');
+                if (!token) {
+                    throw new Error('Not authenticated. Please log in first.');
+                }
+                
                 // Fetch session data with messages
-                const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
+                const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -246,7 +256,7 @@
                 
                 const roleDiv = document.createElement('div');
                 roleDiv.className = 'message-role';
-                roleDiv.textContent = msg.role === 'user' ? 'You' : 'Claude';
+                roleDiv.textContent = msg.role === 'user' ? 'You' : 'Boba';
                 
                 const timestampDiv = document.createElement('div');
                 timestampDiv.className = 'message-timestamp';

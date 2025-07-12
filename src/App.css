@@ -259,6 +259,17 @@ body {
   font-weight: 600;
 }
 
+.sessions-warning {
+  margin: 0 20px 15px 20px;
+  padding: 10px;
+  background-color: #fff9e6;
+  border: 1px solid #ffd666;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #735c0f;
+  line-height: 1.4;
+}
+
 .no-sessions {
   padding: 20px;
   text-align: center;
@@ -589,6 +600,19 @@ body {
   padding: 20px;
   background: white;
   border-top: 1px solid #e5e3df;
+}
+
+.token-usage {
+  max-width: 800px;
+  min-width: 800px;
+  margin: 0 auto 10px auto;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #e5e3df;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
 }
 
 .chat-input-container {
