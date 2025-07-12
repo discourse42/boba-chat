@@ -3,6 +3,7 @@ import { open } from 'sqlite';
 import type { Database } from 'sqlite';
 import { join } from 'path';
 import bcrypt from 'bcrypt';
+import { mkdir } from 'fs/promises';
 
 export interface User {
   id: number;
@@ -33,8 +34,11 @@ export class DatabaseService {
 
   static async initialize(): Promise<void> {
     try {
+      const dataDir = join(process.cwd(), 'data');
+      await mkdir(dataDir, { recursive: true });
+      
       this.db = await open({
-        filename: join(process.cwd(), 'data', 'claude-chat.db'),
+        filename: join(dataDir, 'claude-chat.db'),
         driver: sqlite3.Database
       });
 
