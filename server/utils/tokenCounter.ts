@@ -7,28 +7,42 @@ export interface TokenUsage {
   messageCount: number;
 }
 
-// Initialize Anthropic client for token counting
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
 export async function countTokens(messages: Array<{ role: string; content: string }>, model: string = 'claude-sonnet-4-20250514'): Promise<number> {
   try {
-    // Use Anthropic's official token counting (correct method name)
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY not found in environment');
+    }
+
+    const anthropic = new Anthropic({
+      apiKey: apiKey,
+    });
+    
+    // Use Anthropic's official token counting
     const response = await anthropic.messages.countTokens({
       model,
       messages: messages as any[],
     });
     
     return response.input_tokens;
+    
   } catch (error) {
     console.error('Error counting tokens with Anthropic API:', error);
-    // Fallback estimation: roughly 4 characters per token
-    let totalChars = 0;
+    console.log('Falling back to estimation method');
+    
+    // Fallback estimation
+    let totalTokens = 0;
     for (const message of messages) {
-      totalChars += message.content.length;
+      const content = message.content;
+      const estimatedTokens = Math.ceil(content.length / 3.5);
+      const messageOverhead = 15;
+      totalTokens += estimatedTokens + messageOverhead;
     }
-    return Math.ceil(totalChars / 4);
+    const systemOverhead = 25;
+    totalTokens += systemOverhead;
+    
+    return totalTokens;
   }
 }
 

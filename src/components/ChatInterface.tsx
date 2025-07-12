@@ -41,7 +41,7 @@ export const ChatInterface: React.FC = () => {
           <div className="welcome-message">
             <div className="welcome-content">
               <h2>Welcome to Boba Chat</h2>
-              <p>A basic Boba chat wrapper</p>
+              <p>A basic Claude Sonnet 4 chat wrapper</p>
               <p style={{ fontSize: '14px', color: '#666', margin: '10px 0', textAlign: 'center' }}>
                 I built this while half-watching that Boba Fett show on Disney. <br/>I thought it might be good like Andor, but it was just passable. <br/>Kind of like this app.
               </p>
