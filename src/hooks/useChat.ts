@@ -144,7 +144,7 @@ export const useChat = () => {
       let newSessionId: string | undefined;
       let assistantMessageAdded = false;
       const isFirstMessage = state.messages.length === 0;
-      const shouldUpdateTitle = !content.trim().startsWith('#');
+      const shouldUpdateTitle = !content.trim().startsWith('#') && isFirstMessage;
       
       for await (const event of chatService.streamChat(content, state.currentSession?.id)) {
         console.log('Received event in hook:', event);
@@ -179,7 +179,7 @@ export const useChat = () => {
                 }
               }
             } else if (state.currentSession && shouldUpdateTitle && state.currentSession.title === 'New Session') {
-              // Update title for existing session if message doesn't start with # and title is still "New Session"
+              // Update title for existing session if it's the first message, doesn't start with #, and title is still "New Session"
               try {
                 const sanitizedTitle = sanitizeTitle(content);
                 if (sanitizedTitle) {
