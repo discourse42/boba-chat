@@ -144,7 +144,11 @@ export const useChat = () => {
       let newSessionId: string | undefined;
       let assistantMessageAdded = false;
       const isFirstMessage = state.messages.length === 0;
-      const shouldUpdateTitle = !content.trim().startsWith('#') && isFirstMessage;
+      // Check if this is the first non-# message (should update title if no previous non-# messages exist)
+      const hasNonCommandMessage = state.messages.some(msg => 
+        msg.role === 'user' && !msg.content.trim().startsWith('#')
+      );
+      const shouldUpdateTitle = !content.trim().startsWith('#') && !hasNonCommandMessage;
       
       for await (const event of chatService.streamChat(content, state.currentSession?.id)) {
         console.log('Received event in hook:', event);
