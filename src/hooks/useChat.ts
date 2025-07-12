@@ -1,0 +1,183 @@
+import { useReducer, useCallback } from 'react';
+import type { ChatState, Message, Session } from '../types';
+import { chatService, sessionService } from '../services/api';
+
+type ChatAction =
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_STREAMING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_SESSIONS'; payload: Session[] }
+  | { type: 'SET_CURRENT_SESSION'; payload: Session | null }
+  | { type: 'SET_MESSAGES'; payload: Message[] }
+  | { type: 'ADD_MESSAGE'; payload: Message }
+  | { type: 'UPDATE_LAST_MESSAGE'; payload: string }
+  | { type: 'CLEAR_MESSAGES' };
+
+const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    case 'SET_STREAMING':
+      return { ...state, isStreaming: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload };
+    case 'SET_SESSIONS':
+      return { ...state, sessions: action.payload };
+    case 'SET_CURRENT_SESSION':
+      return { ...state, currentSession: action.payload };
+    case 'SET_MESSAGES':
+      return { ...state, messages: action.payload };
+    case 'ADD_MESSAGE':
+      return { ...state, messages: [...state.messages, action.payload] };
+    case 'UPDATE_LAST_MESSAGE': {
+      const messages = [...state.messages];
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.role === 'assistant') {
+        const updatedMessage = { ...lastMessage, content: lastMessage.content + action.payload };
+        messages[messages.length - 1] = updatedMessage;
+      }
+      return { ...state, messages };
+    }
+    case 'CLEAR_MESSAGES':
+      return { ...state, messages: [], currentSession: null };
+    default:
+      return state;
+  }
+};
+
+const initialState: ChatState = {
+  currentSession: null,
+  sessions: [],
+  messages: [],
+  isLoading: false,
+  isStreaming: false,
+  error: null,
+};
+
+export const useChat = () => {
+  const [state, dispatch] = useReducer(chatReducer, initialState);
+
+  const loadSessions = useCallback(async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const sessions = await sessionService.getSessions();
+      dispatch({ type: 'SET_SESSIONS', payload: sessions });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to load sessions' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, []);
+
+  const loadSession = useCallback(async (sessionId: string) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const { session, messages } = await sessionService.getSession(sessionId);
+      dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
+      dispatch({ type: 'SET_MESSAGES', payload: messages });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to load session' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, []);
+
+  const sendMessage = useCallback(async (content: string) => {
+    console.log('=== HOOK: sendMessage called ===');
+    console.log('Content:', content);
+    console.log('Current session:', state.currentSession);
+    
+    try {
+      dispatch({ type: 'SET_STREAMING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      // Add user message immediately
+      const userMessage: Message = {
+        session_id: state.currentSession?.id || '',
+        role: 'user',
+        content,
+        timestamp: new Date().toISOString(),
+      };
+      dispatch({ type: 'ADD_MESSAGE', payload: userMessage });
+
+      // Stream the response
+      console.log('Starting to stream chat...');
+      let newSessionId: string | undefined;
+      let assistantMessageAdded = false;
+      
+      for await (const event of chatService.streamChat(content, state.currentSession?.id)) {
+        console.log('Received event in hook:', event);
+        switch (event.type) {
+          case 'sessionId':
+            newSessionId = event.sessionId;
+            if (!state.currentSession && newSessionId) {
+              // Load the new session
+              const sessions = await sessionService.getSessions();
+              const newSession = sessions.find(s => s.id === newSessionId);
+              if (newSession) {
+                dispatch({ type: 'SET_CURRENT_SESSION', payload: newSession });
+                dispatch({ type: 'SET_SESSIONS', payload: sessions });
+              }
+            }
+            break;
+          case 'content':
+            if (event.content) {
+              // Add assistant message on first content
+              if (!assistantMessageAdded) {
+                const assistantMessage: Message = {
+                  session_id: newSessionId || state.currentSession?.id || '',
+                  role: 'assistant',
+                  content: event.content,
+                  timestamp: new Date().toISOString(),
+                };
+                dispatch({ type: 'ADD_MESSAGE', payload: assistantMessage });
+                assistantMessageAdded = true;
+              } else {
+                dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: event.content });
+              }
+            }
+            break;
+          case 'error':
+            dispatch({ type: 'SET_ERROR', payload: event.error || 'Unknown error occurred' });
+            break;
+        }
+      }
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to send message' });
+    } finally {
+      dispatch({ type: 'SET_STREAMING', payload: false });
+    }
+  }, [state.currentSession?.id]);
+
+  const createNewSession = useCallback(() => {
+    console.log('=== Creating new session ===');
+    dispatch({ type: 'CLEAR_MESSAGES' });
+    dispatch({ type: 'SET_CURRENT_SESSION', payload: null });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    // Reload sessions to refresh the sidebar
+    loadSessions();
+  }, [loadSessions]);
+
+  const deleteSession = useCallback(async (sessionId: string) => {
+    try {
+      await sessionService.deleteSession(sessionId);
+      const sessions = state.sessions.filter(s => s.id !== sessionId);
+      dispatch({ type: 'SET_SESSIONS', payload: sessions });
+      
+      if (state.currentSession?.id === sessionId) {
+        dispatch({ type: 'CLEAR_MESSAGES' });
+      }
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to delete session' });
+    }
+  }, [state.sessions, state.currentSession?.id]);
+
+  return {
+    ...state,
+    loadSessions,
+    loadSession,
+    sendMessage,
+    createNewSession,
+    deleteSession,
+  };
+};

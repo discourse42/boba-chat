@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Chat</title>
+</head>
+<body>
+    <h1>Debug Chat Test</h1>
+    <div>
+        <input type="text" id="messageInput" placeholder="Type your message..." style="width: 300px; padding: 10px;">
+        <button onclick="sendMessage()" style="padding: 10px;">Send</button>
+    </div>
+    <div id="output" style="margin-top: 20px; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto;"></div>
+    
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            output.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            log('Sending message: ' + message);
+            input.value = '';
+            
+            try {
+                const response = await fetch('/api/chat/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token'
+                    },
+                    body: JSON.stringify({ message })
+                });
+                
+                log('Response status: ' + response.status);
+                
+                if (!response.ok) {
+                    log('Error: ' + response.statusText);
+                    return;
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                log('Starting to read stream...');
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        log('Stream ended');
+                        break;
+                    }
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    log('Received chunk: ' + chunk.replace(/\n/g, '\\n'));
+                    
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                log('Received [DONE]');
+                                return;
+                            }
+                            try {
+                                const event = JSON.parse(data);
+                                log('Parsed event: ' + JSON.stringify(event));
+                                if (event.type === 'content') {
+                                    log('Content: ' + event.content);
+                                }
+                            } catch (e) {
+                                log('Parse error: ' + e.message);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                log('Fetch error: ' + error.message);
+            }
+        }
+        
+        // Allow Enter key to send message
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        log('Debug chat loaded. Try sending a message!');
+    </script>
+</body>
+</html>

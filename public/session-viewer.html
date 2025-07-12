@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Viewer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #faf9f7;
+            min-height: 100vh;
+            color: #2d2d2d;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #ffffff;
+            padding: 20px;
+            border-bottom: 1px solid #e5e3df;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2d2d2d;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .session-info {
+            font-size: 14px;
+            color: #666;
+        }
+        .message {
+            margin-bottom: 24px;
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .message-role {
+            font-weight: 600;
+            font-size: 14px;
+            color: #8b5a3c;
+        }
+        .message-timestamp {
+            font-size: 12px;
+            color: #999;
+        }
+        .message-content {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e3df;
+            line-height: 1.6;
+        }
+        .message.user .message-content {
+            background-color: #f8f8f8;
+            border-color: #ddd;
+        }
+        .message-content p {
+            margin-bottom: 12px;
+        }
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+        .message-content pre {
+            background: #f8f8f8;
+            color: #2d2d2d;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+            border: 1px solid #e5e3df;
+            font-size: 14px;
+        }
+        .message-content code {
+            background: #f8f8f8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .message-content pre code {
+            background: none;
+            padding: 0;
+        }
+        .message-content h1,
+        .message-content h2,
+        .message-content h3 {
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #2d2d2d;
+        }
+        .message-content h1:first-child,
+        .message-content h2:first-child,
+        .message-content h3:first-child {
+            margin-top: 0;
+        }
+        .message-content ul,
+        .message-content ol {
+            margin-bottom: 12px;
+            padding-left: 24px;
+        }
+        .message-content li {
+            margin-bottom: 4px;
+        }
+        .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
+        .message-content th,
+        .message-content td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .message-content th {
+            background-color: #f8f8f8;
+            font-weight: 600;
+        }
+        .message-content tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .message-content blockquote {
+            border-left: 4px solid #8b5a3c;
+            padding-left: 16px;
+            margin: 12px 0;
+            color: #666;
+            font-style: italic;
+        }
+        .message-content a {
+            color: #8b5a3c;
+            text-decoration: none;
+        }
+        .message-content a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #8b5a3c;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Chat</a>
+        <div class="header">
+            <h1>Session Viewer</h1>
+            <div class="session-info" id="session-info">Loading session...</div>
+        </div>
+        <div id="messages" class="messages">
+            <div class="loading">Loading messages...</div>
+        </div>
+    </div>
+
+    <script>
+        // Get session ID from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session');
+        
+        if (!sessionId) {
+            document.getElementById('messages').innerHTML = '<div class="error">No session ID provided</div>';
+        } else {
+            loadSession(sessionId);
+        }
+        
+        async function loadSession(sessionId) {
+            try {
+                console.log('Loading session:', sessionId);
+                
+                // Fetch session data with messages
+                const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Failed to load session (${response.status})`);
+                }
+                
+                const data = await response.json();
+                const { session, messages } = data;
+                
+                // Update session info
+                document.getElementById('session-info').innerHTML = `
+                    <strong>${session.title}</strong><br>
+                    Created: ${new Date(session.created_at).toLocaleString()}<br>
+                    Last updated: ${new Date(session.updated_at).toLocaleString()}
+                `;
+                
+                displayMessages(messages);
+            } catch (error) {
+                console.error('Load session error:', error);
+                document.getElementById('messages').innerHTML = `<div class="error">Error loading session: ${error.message}</div>`;
+            }
+        }
+        
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function displayMessages(messages) {
+            const container = document.getElementById('messages');
+            container.innerHTML = '';
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="error">No messages in this session</div>';
+                return;
+            }
+            
+            // Sort messages by timestamp
+            messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            messages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.role}`;
+                
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'message-header';
+                
+                const roleDiv = document.createElement('div');
+                roleDiv.className = 'message-role';
+                roleDiv.textContent = msg.role === 'user' ? 'You' : 'Claude';
+                
+                const timestampDiv = document.createElement('div');
+                timestampDiv.className = 'message-timestamp';
+                timestampDiv.textContent = formatTimestamp(msg.timestamp);
+                
+                headerDiv.appendChild(roleDiv);
+                headerDiv.appendChild(timestampDiv);
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                // Use marked to render markdown content for assistant messages
+                if (msg.role === 'assistant') {
+                    marked.setOptions({
+                        breaks: true,
+                        gfm: true
+                    });
+                    contentDiv.innerHTML = marked.parse(msg.content);
+                } else {
+                    contentDiv.textContent = msg.content;
+                }
+                
+                messageDiv.appendChild(headerDiv);
+                messageDiv.appendChild(contentDiv);
+                container.appendChild(messageDiv);
+            });
+        }
+    </script>
+</body>
+</html>
