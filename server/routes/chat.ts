@@ -26,8 +26,7 @@ router.post('/stream', authenticateToken, asyncHandler(async (req: Authenticated
 
   // Create new session if none provided
   if (!currentSessionId) {
-    const title = message.slice(0, 50).trim() + (message.length > 50 ? '...' : '');
-    currentSessionId = await DatabaseService.createSession(userId, title);
+    currentSessionId = await DatabaseService.createSession(userId, 'New Session');
   } else {
     // Verify session belongs to user
     const session = await DatabaseService.getSession(currentSessionId);
@@ -152,9 +151,17 @@ router.post('/stream', authenticateToken, asyncHandler(async (req: Authenticated
       }
     }
 
-    // Save assistant response
+    // Save assistant response with token metadata
     if (assistantResponse.trim()) {
-      await DatabaseService.saveMessage(currentSessionId, 'assistant', assistantResponse);
+      const assistantMetadata = {
+        outputTokens,
+        inputTokens: tokenUsage.inputTokens,
+        totalTokens: tokenUsage.inputTokens + outputTokens
+      };
+      
+      console.log(`[TOKEN COUNT] Assistant response: ${outputTokens} output tokens, ${tokenUsage.inputTokens} input tokens, ${assistantMetadata.totalTokens} total`);
+      
+      await DatabaseService.saveMessage(currentSessionId, 'assistant', assistantResponse, assistantMetadata);
     }
 
   } catch (error) {

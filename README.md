@@ -34,6 +34,11 @@ This is primarily a little project to learn how the Claude API works and what is
 - Custom hooks for reusable logic
 - Error boundaries and comprehensive error handling
 - Compression and caching optimizations
+- Token usage tracking with Anthropic's official API
+  - Real-time token count display during conversations
+  - Input/output token breakdown for each assistant message
+  - Token metadata stored with messages for historical analysis
+  - Console logging of token usage for monitoring
 
 ## 🏗️ **Project Structure**
 
@@ -154,12 +159,27 @@ pm2 startup  # Generate startup script
 
 - **Collapsible Sidebar**: Thin toggle on the border for easy show/hide
 - **Real-time Streaming**: Watch responses appear in real-time
-- **Session Management**: Persistent chat history with SQLite
+- **Session Management**: Advanced chat history features
+  - Automatic session naming from first non-command message
+  - Sessions start as "New Session" until first message not starting with '#'
+  - Supports up to 200 character session titles
+  - All sessions visible to authenticated users with privacy warning
+  - Recent sessions displayed with smart date formatting (time for today, day for this week, date for older)
+  - Pacific timezone display throughout the application
+  - One-click deletion of sessions from sidebar
 - **JWT Authentication**: Secure token-based login
 - **TypeScript**: Full type safety throughout
 - **Modern React**: Context API, custom hooks, and clean architecture
 - **Mobile Warning**: Tells users it's not mobile-ready (because it's not)
-- **Session Viewer**: Standalone pages for viewing old conversations
+- **Session Viewer**: Enhanced standalone pages for viewing conversations
+  - Opens in new tab when clicking sessions in sidebar
+  - Displays session title prominently with "Session Viewer" as subtitle
+  - Shows creation and last update timestamps in Pacific time
+  - Token count display for assistant messages (input/output format)
+  - Collapsible user messages starting with '#' (shown as "User-provided System Guidance")
+  - All markdown links open in new tabs
+  - Preserves line breaks in user messages while rendering full markdown for assistant responses
+  - "Produced by Claude + Boba Chat" attribution with navigation guidance
 
 ## 🔧 **Configuration**
 

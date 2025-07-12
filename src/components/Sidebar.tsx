@@ -35,16 +35,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Ensure UTC timestamp is properly parsed by adding 'Z' if not present
+    const utcTimestamp = dateString + (dateString.includes('Z') ? '' : 'Z');
+    const date = new Date(utcTimestamp);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' });
     } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
+      return date.toLocaleDateString([], { weekday: 'short', timeZone: 'America/Los_Angeles' });
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
     }
   };
 
@@ -73,8 +75,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={session.id}
               className={`session-item ${currentSession?.id === session.id ? 'active' : ''}`}
               onClick={() => {
-                // Open session viewer in same tab
-                window.location.href = `/session-viewer.html?session=${encodeURIComponent(session.id)}`;
+                // Open session viewer in new tab
+                window.open(`/session-viewer.html?session=${encodeURIComponent(session.id)}`, '_blank');
               }}
             >
               <div className="session-content">

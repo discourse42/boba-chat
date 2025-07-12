@@ -446,6 +446,11 @@ body {
   color: #999;
 }
 
+.token-count {
+  color: #666;
+  font-weight: 500;
+}
+
 .message-content {
   background: white;
   padding: 16px 20px;

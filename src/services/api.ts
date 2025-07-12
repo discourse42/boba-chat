@@ -74,6 +74,18 @@ export const sessionService = {
     return handleResponse(response);
   },
 
+  async updateSessionTitle(sessionId: string, title: string): Promise<Session> {
+    const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify({ title }),
+    });
+    return handleResponse(response);
+  },
+
   async deleteSession(sessionId: string): Promise<void> {
     const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
       method: 'DELETE',

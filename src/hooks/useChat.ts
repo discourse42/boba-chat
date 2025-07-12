@@ -2,6 +2,15 @@ import { useReducer, useCallback } from 'react';
 import type { ChatState, Message, Session, TokenUsage } from '../types';
 import { chatService, sessionService } from '../services/api';
 
+// Utility function to sanitize and truncate user input for session title
+const sanitizeTitle = (input: string): string => {
+  return input
+    .replace(/[^\w\s\-.,!?()]/g, '') // Remove special chars except basic punctuation
+    .trim()
+    .substring(0, 300) // Limit to 300 characters
+    .replace(/\s+/g, ' '); // Normalize whitespace
+};
+
 type ChatAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_STREAMING'; payload: boolean }
@@ -134,6 +143,8 @@ export const useChat = () => {
       console.log('Starting to stream chat...');
       let newSessionId: string | undefined;
       let assistantMessageAdded = false;
+      const isFirstMessage = state.messages.length === 0;
+      const shouldUpdateTitle = !content.trim().startsWith('#');
       
       for await (const event of chatService.streamChat(content, state.currentSession?.id)) {
         console.log('Received event in hook:', event);
@@ -147,6 +158,42 @@ export const useChat = () => {
               if (newSession) {
                 dispatch({ type: 'SET_CURRENT_SESSION', payload: newSession });
                 dispatch({ type: 'SET_SESSIONS', payload: sessions });
+                
+                // Update session title with sanitized message if it doesn't start with # and title is still "New Session"
+                if (shouldUpdateTitle) {
+                  try {
+                    const sanitizedTitle = sanitizeTitle(content);
+                    if (sanitizedTitle) {
+                      await sessionService.updateSessionTitle(newSessionId, sanitizedTitle);
+                      // Refresh sessions to get updated title
+                      const updatedSessions = await sessionService.getSessions();
+                      const updatedSession = updatedSessions.find(s => s.id === newSessionId);
+                      if (updatedSession) {
+                        dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
+                        dispatch({ type: 'SET_SESSIONS', payload: updatedSessions });
+                      }
+                    }
+                  } catch (error) {
+                    console.warn('Failed to update session title:', error);
+                  }
+                }
+              }
+            } else if (state.currentSession && shouldUpdateTitle && state.currentSession.title === 'New Session') {
+              // Update title for existing session if message doesn't start with # and title is still "New Session"
+              try {
+                const sanitizedTitle = sanitizeTitle(content);
+                if (sanitizedTitle) {
+                  await sessionService.updateSessionTitle(state.currentSession.id, sanitizedTitle);
+                  // Refresh sessions to get updated title
+                  const updatedSessions = await sessionService.getSessions();
+                  const updatedSession = updatedSessions.find(s => s.id === state.currentSession?.id);
+                  if (updatedSession) {
+                    dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
+                    dispatch({ type: 'SET_SESSIONS', payload: updatedSessions });
+                  }
+                }
+              } catch (error) {
+                console.warn('Failed to update session title:', error);
               }
             }
             break;

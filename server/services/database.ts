@@ -218,7 +218,11 @@ export class DatabaseService {
       [sessionId]
     );
     
-    return messages;
+    // Parse metadata JSON string back to object
+    return messages.map(msg => ({
+      ...msg,
+      metadata: msg.metadata ? JSON.parse(msg.metadata) : undefined
+    }));
   }
 
   static async deleteMessage(messageId: number): Promise<void> {

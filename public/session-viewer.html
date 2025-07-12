@@ -143,6 +143,45 @@
         .message-content a:hover {
             text-decoration: underline;
         }
+        .collapsed-message {
+            cursor: pointer;
+            font-style: italic;
+            color: #666;
+            padding: 12px 16px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        .collapsed-message:hover {
+            background-color: #ececec;
+        }
+        .message.collapsed .message-content {
+            display: none;
+        }
+        .message.collapsed .collapsed-message {
+            display: block;
+        }
+        .message:not(.collapsed) .collapsed-message {
+            display: none;
+        }
+        .collapse-button {
+            cursor: pointer;
+            color: #666;
+            font-size: 12px;
+            text-align: right;
+            padding: 4px 8px;
+            margin-top: 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .collapse-button:hover {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        .message.collapsed .collapse-button {
+            display: none;
+        }
         .loading {
             text-align: center;
             padding: 50px;
@@ -170,10 +209,14 @@
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back-link">← Back to Chat</a>
+        <div style="margin-bottom: 20px; font-size: 14px; color: #666;">
+            Produced by Claude + <a href="/" style="color: #8b5a3c; text-decoration: none; font-weight: 500;">Boba Chat</a><br>
+            <span style="font-size: 12px; color: #999;">If you came here from Boba Chat, close tab to return to your session</span>
+        </div>
         <div class="header">
-            <h1>Session Viewer</h1>
-            <div class="session-info" id="session-info">Loading session...</div>
+            <h1 id="session-title">Loading session...</h1>
+            <div style="font-size: 14px; color: #666; margin-top: 8px;">Session Viewer</div>
+            <div class="session-info" id="session-info" style="margin-top: 10px;"></div>
         </div>
         <div id="messages" class="messages">
             <div class="loading">Loading messages...</div>
@@ -216,11 +259,16 @@
                 const data = await response.json();
                 const { session, messages } = data;
                 
-                // Update session info
+                // Update session title and info
+                document.getElementById('session-title').textContent = session.title;
+                
+                // Parse UTC timestamps and convert to Pacific time
+                const createdDate = new Date(session.created_at + (session.created_at.includes('Z') ? '' : 'Z'));
+                const updatedDate = new Date(session.updated_at + (session.updated_at.includes('Z') ? '' : 'Z'));
+                
                 document.getElementById('session-info').innerHTML = `
-                    <strong>${session.title}</strong><br>
-                    Created: ${new Date(session.created_at).toLocaleString()}<br>
-                    Last updated: ${new Date(session.updated_at).toLocaleString()}
+                    Created: ${createdDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}<br>
+                    Last updated: ${updatedDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}
                 `;
                 
                 displayMessages(messages);
@@ -231,8 +279,10 @@
         }
         
         function formatTimestamp(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            // Ensure UTC timestamp is properly parsed by adding 'Z' if not present
+            const utcTimestamp = timestamp + (timestamp.includes('Z') ? '' : 'Z');
+            const date = new Date(utcTimestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' });
         }
         
         function displayMessages(messages) {
@@ -251,6 +301,12 @@
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${msg.role}`;
                 
+                // Check if user message starts with #
+                const isCollapsibleUserMessage = msg.role === 'user' && msg.content.trim().startsWith('#');
+                if (isCollapsibleUserMessage) {
+                    messageDiv.classList.add('collapsed');
+                }
+                
                 const headerDiv = document.createElement('div');
                 headerDiv.className = 'message-header';
                 
@@ -260,7 +316,15 @@
                 
                 const timestampDiv = document.createElement('div');
                 timestampDiv.className = 'message-timestamp';
-                timestampDiv.textContent = formatTimestamp(msg.timestamp);
+                let timestampText = formatTimestamp(msg.timestamp);
+                
+                // Add token count for assistant messages
+                if (msg.role === 'assistant' && msg.metadata && msg.metadata.outputTokens) {
+                    const inputTokens = msg.metadata.inputTokens || 0;
+                    timestampText += ` • ${inputTokens}/${msg.metadata.outputTokens}`;
+                }
+                
+                timestampDiv.textContent = timestampText;
                 
                 headerDiv.appendChild(roleDiv);
                 headerDiv.appendChild(timestampDiv);
@@ -268,18 +332,49 @@
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'message-content';
                 
-                // Use marked to render markdown content for assistant messages
+                // Use marked to render markdown content for assistant messages only
                 if (msg.role === 'assistant') {
                     marked.setOptions({
                         breaks: true,
                         gfm: true
                     });
-                    contentDiv.innerHTML = marked.parse(msg.content);
+                    
+                    try {
+                        let html = marked.parse(msg.content);
+                        // Post-process to add target="_blank" to all links
+                        html = html.replace(/<a href="([^"]*)"([^>]*)>/g, '<a href="$1" target="_blank" rel="noopener noreferrer"$2>');
+                        contentDiv.innerHTML = html;
+                    } catch (error) {
+                        console.error('Error parsing markdown:', error);
+                        contentDiv.innerHTML = msg.content;
+                    }
                 } else {
-                    contentDiv.textContent = msg.content;
+                    // For user messages, just preserve line breaks
+                    contentDiv.innerHTML = msg.content.replace(/\n/g, '<br>');
                 }
                 
                 messageDiv.appendChild(headerDiv);
+                
+                // Add collapsed message placeholder and collapse button after header
+                if (isCollapsibleUserMessage) {
+                    const collapsedDiv = document.createElement('div');
+                    collapsedDiv.className = 'collapsed-message';
+                    collapsedDiv.textContent = 'User-provided System Guidance';
+                    collapsedDiv.onclick = () => {
+                        messageDiv.classList.toggle('collapsed');
+                    };
+                    messageDiv.appendChild(collapsedDiv);
+                    
+                    // Add collapse button for expanded state
+                    const collapseButton = document.createElement('div');
+                    collapseButton.className = 'collapse-button';
+                    collapseButton.textContent = '× Collapse System Guidance';
+                    collapseButton.onclick = () => {
+                        messageDiv.classList.add('collapsed');
+                    };
+                    messageDiv.appendChild(collapseButton);
+                }
+                
                 messageDiv.appendChild(contentDiv);
                 container.appendChild(messageDiv);
             });
